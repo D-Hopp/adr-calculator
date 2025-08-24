@@ -1,5 +1,293 @@
 <html>
-  <body>
-    <h1>ADR Calculator</h1>
+  <head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body id="body">
+    <header>
+      <h1>ADR Calculator</h1>
+    </header>
+      <ul class="c-level-list js-level-list" id="level">
+        <template id="levelitem">
+          <li class="js-level-item">
+            <details name="levels" class="js-level-details">
+              <summary class="js-level-summary"><h2 class="js-level-headline">Level 1</h2> <span class="js-total">[0 ADR]</span></summary>
+              <div class="container js-details-content">
+                <div class="row">
+
+                  <div class="col-6">
+                    <div class="c-stats js-stats">
+                      <h3>Stats</h3>
+                      <div class="row">
+                        <div class="col">
+                          <fieldset>
+                            <label>Str
+                              <input name="str" type="number" min="0" max="30" value="8">
+                            </label>
+                          </fieldset>
+                        </div>
+                        <div class="col">
+                          <fieldset>
+                            <label>Dex
+                              <input name="dex" type="number" min="0" max="30" value="8">
+                            </label>
+                          </fieldset>
+                        </div>
+                        <div class="col">
+                          <fieldset>
+                            <label>Con
+                              <input name="con" type="number" min="0" max="30" value="8">
+                            </label>
+                          </fieldset>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col">
+                          <fieldset>
+                            <label>Int
+                              <input name="int" type="number" min="0" max="30" value="8">
+                            </label>
+                          </fieldset>
+                        </div>
+                        <div class="col">
+                          <fieldset>
+                            <label>Wis
+                              <input name="wis" type="number" min="0" max="30" value="8">
+                            </label>
+                          </fieldset>
+                        </div>
+                        <div class="col">
+                          <fieldset>
+                            <label>Cha
+                              <input name="cha" type="number" min="0" max="30" value="8">
+                            </label>
+                          </fieldset>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="c-target js-target">
+                      <h3>Target</h3>
+                      <div class="row">
+                        <div class="col-3">
+                          <div class="row">                            
+                            <fieldset>
+                              <label>AC
+                                <input name="ac" type="number" min="0" max="50" value="13">
+                              </label>
+                            </fieldset>
+                          </div>
+                        </div>
+                        <div class="col-9">
+                          <p>Save Bonus</p>
+                          <div class="row">
+                            <div class="col">
+                              <fieldset>
+                                <label>Str
+                                  <input name="str-save" type="number" min="-5" max="30" value="1">
+                                </label>
+                              </fieldset>
+                            </div>
+                            <div class="col">
+                              <fieldset>
+                                <label>Dex
+                                  <input name="dex-save" type="number" min="-5" max="30" value="2">
+                                </label>
+                              </fieldset>
+                            </div>
+                          </div>
+                          <div class="row">
+                            <div class="col">
+                              <fieldset>
+                                <label>Con
+                                  <input name="con-save" type="number" min="-5" max="30" value="1">
+                                </label>
+                              </fieldset>
+                            </div>
+                            <div class="col">
+                              <fieldset>
+                                <label>Int
+                                  <input name="int-save" type="number" min="-5" max="30" value="-1">
+                                </label>
+                              </fieldset>
+                            </div>
+                          </div>
+                          <div class="row">
+                            <div class="col">
+                              <fieldset>
+                                <label>Wis
+                                  <input name="wis-save" type="number" min="-5" max="30" value="0">
+                                </label>
+                              </fieldset>
+                            </div>
+                            <div class="col">
+                              <fieldset>
+                                <label>Cha
+                                  <input name="cha-save" type="number" min="-5" max="30" value="-1">
+                                </label>
+                              </fieldset>
+                            </div>
+                          </div>
+                        
+                        </div>
+                      </div>
+                  </div>
+
+
+                </div>
+                <div class="c-actions row">
+
+                  <div class="col">
+                    <div class="row">
+                      <div class="col-2">
+                        
+                      </div>
+                      <div class="col-1">
+                        Adv
+                      </div>
+                      <div class="col-2">
+                        Hit/ Save bonus
+                      </div>
+                      <div class="col-1">
+                        Target
+                      </div>
+                      <div class="col-3">
+                        Dmg
+                      </div>
+                      <div class="col-1">
+                        Crit on
+                      </div>
+                      <div class="col-2">
+                        Crit Bonus
+                      </div>
+                    </div>
+                    <div class="c-action row" data-type="action">
+                      <div class="col" data-target="action-col">
+                        <div  class="row">
+                          <div class="col-2">
+                            <h3>Action</h3>                                
+                            <button class="js-add-action-button">
+                              add
+                            </button>    
+                          </div>
+                      </div>                      
+                    </div>
+
+                    <div class="c-bonus-action row" data-type="bonusaction">
+                      <div class="col" data-target="action-col">
+                        <div  class="row">
+                          <div class="col-2">
+                            <h3>Bonus Action</h3>
+                            <button class="js-add-action-button">
+                              add
+                            </button>        
+                          </div>
+                        </div>
+                      </div>                      
+                    </div>
+                    
+                    <div class="c-reaction row" data-type="reaction">
+                      <div class="col" data-target="action-col">
+                        <div  class="row">
+                          <div class="col-2">
+                            <h3>Reaction</h3>
+                            <button class="js-add-action-button">
+                              add
+                            </button>        
+                          </div>
+                        </div>
+                      </div>                      
+                    </div>
+                  
+                    <div class="c-offturn row" data-type="offturn">
+                      <div class="col" data-target="action-col">
+                        <div  class="row">
+                          <div class="col-2">
+                            <h3>Offturn</h3>
+                            <button class="js-add-action-button">
+                              add
+                            </button>        
+                          </div>
+                        </div>
+                      </div>                      
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </details>
+          </li>
+        </template>
+      </ul>
+      <template id="action">
+        <div class="js-action-row">
+          <div class="row">
+            <div class="col-2">
+              <button class="js-remove-action-buttom">remove</button>
+            </div>
+            <div class="col-10">
+              <input type="text" name="action-name" placeholder="name" title="name">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-2" data-value="value">
+
+            </div>
+            <div class="col-1">
+              <select name="adv">
+                <option value="1">Advantage</option>
+                <option value="2">Disadvantage</option>
+                <option value="0" selected>None</option>
+              </select>
+            </div>
+            <div class="col-1">
+              <input type="text" name="hit" placeholder="to hit" title="to hit">
+            </div>
+            <div class="col-1">
+              <select name="target">
+                <option value="0" selected>AC</option>
+                <option value="1">Str save</option>
+                <option value="2">Dex save</option>
+                <option value="3">Con save</option>
+                <option value="4">Int save</option>
+                <option value="5">Wis save</option>
+                <option value="6">Cha save</option>
+              </select>
+            </div>
+            <div class="col-3">
+              <input type="text" name="damage" placeholder="damage" title="damage">
+            </div>
+            <div class="col-1">
+              <input type="number" name="criton" min="1" max="20" value="20">
+            </div>
+            <div class="col-1">
+              <input type="text" name="crit" placeholder="crit bonus" title="crit bonus">
+            </div>
+            <div class="col-1">
+              <input type="text" name="misc_mult_1" placeholder="multiplier" title="multiplier">
+            </div>
+          </div>
+      
+        </div>
+      </template>
+      <template id="cloneButton">
+        <button class="js-clone-button">Clone previous level</button>
+      </template>
+    </main> 
+    <footer>
+      <div class="c-footer-sticky">
+        <button id="exportData">Export</button>
+        <button popovertarget="import" popovertargetaction="show">Import</button>
+        <dialog id="import" popover="">
+          <textarea id="importArea"></textarea>
+          <button id="popverimport" popovertarget="import" popovertargetaction="hide">Import</button>
+          <button popovertarget="import" popovertargetaction="hide">Cancel</button>
+        </dialog>
+      </div>
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/14.6.0/math.js" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+    <script src="./index.js"></script>
   </body>
 </html>
