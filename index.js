@@ -9,7 +9,7 @@ function init () {
     let data = []
     let targets = TARGETDATA;
     for(let j=AC; j<=CHA_SAVE; j++) {
-        let max = 0;
+        let max = -100;
         for(let level=1; level<=20; level++) {
             if(targets[level][j] > max) {
                 max = targets[level][j];
