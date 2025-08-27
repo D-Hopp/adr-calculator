@@ -74,9 +74,17 @@
                           <div class="row">                            
                             <fieldset>
                               <label>AC
-                                <input name="ac" type="number" min="0" max="50" value="13">
+                                <input name="ac" type="number" min="0" max="50" value="13" disabled>
                               </label>
                             </fieldset>
+                          </div>
+                          <div class="row js-stat-selector">
+                            <label for="average">MM Average</label><br>
+                            <input type="radio" id="average" name="targetstats" value="0" >
+                            <label for="treantmonk">Treantmonk</label><br>
+                            <input type="radio" id="treantmonk" name="targetstats" value="1" checked>
+                            <label for="custom">Custom</label>
+                            <input type="radio" id="custom" name="targetstats" value="2">
                           </div>
                         </div>
                         <div class="col-9">
@@ -85,14 +93,14 @@
                             <div class="col">
                               <fieldset>
                                 <label>Str
-                                  <input name="str-save" type="number" min="-5" max="30" value="1">
+                                  <input name="str-save" type="number" min="-5" max="30" value="1" disabled>
                                 </label>
                               </fieldset>
                             </div>
                             <div class="col">
                               <fieldset>
                                 <label>Dex
-                                  <input name="dex-save" type="number" min="-5" max="30" value="2">
+                                  <input name="dex-save" type="number" min="-5" max="30" value="2" disabled>
                                 </label>
                               </fieldset>
                             </div>
@@ -101,14 +109,14 @@
                             <div class="col">
                               <fieldset>
                                 <label>Con
-                                  <input name="con-save" type="number" min="-5" max="30" value="1">
+                                  <input name="con-save" type="number" min="-5" max="30" value="1" disabled>
                                 </label>
                               </fieldset>
                             </div>
                             <div class="col">
                               <fieldset>
                                 <label>Int
-                                  <input name="int-save" type="number" min="-5" max="30" value="-1">
+                                  <input name="int-save" type="number" min="-5" max="30" value="-1" disabled>
                                 </label>
                               </fieldset>
                             </div>
@@ -117,14 +125,14 @@
                             <div class="col">
                               <fieldset>
                                 <label>Wis
-                                  <input name="wis-save" type="number" min="-5" max="30" value="0">
+                                  <input name="wis-save" type="number" min="-5" max="30" value="0" disabled>
                                 </label>
                               </fieldset>
                             </div>
                             <div class="col">
                               <fieldset>
                                 <label>Cha
-                                  <input name="cha-save" type="number" min="-5" max="30" value="-1">
+                                  <input name="cha-save" type="number" min="-5" max="30" value="-1" disabled>
                                 </label>
                               </fieldset>
                             </div>
@@ -146,7 +154,7 @@
                       <div class="col-1">
                         Adv
                       </div>
-                      <div class="col-2">
+                      <div class="col-1">
                         Hit/ Save bonus
                       </div>
                       <div class="col-1">
@@ -158,8 +166,11 @@
                       <div class="col-1">
                         Crit on
                       </div>
-                      <div class="col-2">
+                      <div class="col-1">
                         Crit Bonus
+                      </div>
+                      <div class="col-1">
+                        Multiplier
                       </div>
                     </div>
                     <div class="c-action row" data-type="action">

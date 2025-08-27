@@ -1,4 +1,5 @@
-const ADV=1, DISADV=2, NONE=0, AC=0, STR_SAVE=1, DEX_SAVE=2, CON_SAVE=3, INT_SAVE=4, WIS_SAVE=5, CHA_SAVE=6;
+const ADV=1, DISADV=2, NONE=0, AC=0, STR_SAVE=1, DEX_SAVE=2, CON_SAVE=3, INT_SAVE=4, WIS_SAVE=5, CHA_SAVE=6, TARGET_STATS_TEMPLATE=7;
+const STATS_MM = 0, STATS_TREANTMONK = 1, STATS_CUSTOM = 2;
 const PLAYER_LEVEL=0, PLAYER_STR=1, PLAYER_DEX=2, PLAYER_CON=3, PLAYER_INT=4, PLAYER_WIS=5, PLAYER_CHA=6, PLAYER_PROF=7;
 const ACTION_ID=0, ACTION_NAME=1, ACTION_ADV=2, ACITON_HIT=3, ACTION_TARGET=4, ACTION_DAMAGE=5, ACTION_CRITON=6, ACTION_CRITDAMAGE=7, ACTION_MISC_MULTIPLIER=8, ACTION_MISC_MULTIPLIER_2=9;
 const DATA_PLAYER=0, DATA_TARGET=1, DATA_ACTION=2, DATA_BONUS_ACTION=3, DATA_REACTION=4, DATA_OFFTURN=5;
@@ -13,10 +14,11 @@ function init () {
             if(targets[level][j] > max) {
                 max = targets[level][j];
             }
-            targets[level][j] = Math.round(max);            
+            targets[level][j] = Math.round(max);        
         }
     }
     for(const i of [...Array(20).keys().map((x)=>x+1)]) {
+        targets[i][TARGET_STATS_TEMPLATE] = 0;    
         data[i]= [
             [i,8,8,8,8,8,8,Math.floor((i-1)/4+2)],
             targets[i],
@@ -37,6 +39,7 @@ function insertLevels () {
         clonedNode.querySelector('.js-level-summary').setAttribute('id',`summary${i}`);
         clonedNode.querySelector('.js-level-item').setAttribute('aria-labelledby',`summary${i}`);
         clonedNode.querySelector('.js-level-headline').textContent = `Level ${i}`;
+        clonedNode.querySelector('.js-stat-selector').querySelectorAll('[name=targetstats]').forEach((el)=>el.setAttribute('name',`targetstats${i}`))
         document.querySelector('.js-level-list').appendChild(clonedNode);
         if(i!==1) {
             const $cloneButton = $($('#cloneButton').html());
@@ -46,7 +49,7 @@ function insertLevels () {
     }
     document.querySelector('.js-level-list').querySelector('details').setAttribute('open','open')
     $('.js-add-action-button').on('click',insertAction);
-    $('.js-stats input,.js-stats select').add('.js-target input,.js-target select').on('change',updateStats);
+    $('.js-stats input,.js-stats select').add('.js-target input[type=radio]').on('change',updateStats);
 }
 
 function insertAction (event) {
@@ -115,6 +118,7 @@ function populate() {
         $target.find('[name=int-save]').val(target[INT_SAVE]);
         $target.find('[name=wis-save]').val(target[WIS_SAVE]);
         $target.find('[name=cha-save]').val(target[CHA_SAVE]);
+        $target.find(`[name=targetstats${level}]`).val([target[TARGET_STATS_TEMPLATE]]);
 
         const $actions = $base.find('.c-action > [data-target=action-col]');
         $actions.find('.js-action-row').remove();
@@ -204,7 +208,7 @@ function updateStats(event) {
         cha: parseNumber($player,'cha'),
         prof: Math.floor((level-1)/4)+2,
     });    
-    const target = Object.values({
+    let target = Object.values({
         ac: parseNumber($target,'ac'),
         strsave: parseNumber($target,'str-save'),
         dexsave: parseNumber($target,'dex-save'),
@@ -212,10 +216,37 @@ function updateStats(event) {
         intsave: parseNumber($target,'int-save'),
         wisave: parseNumber($target,'wis-save'),
         chasave: parseNumber($target,'cha-save'),
+        statstemplate: parseInt($target.find(`[name=targetstats${level}]:checked`).val()),
     });
+    if(data[level][DATA_TARGET][AC] !== target[AC] || data[level][DATA_TARGET][STR_SAVE] !== target[STR_SAVE] || data[level][DATA_TARGET][DEX_SAVE] !== target[DEX_SAVE] || data[level][DATA_TARGET][CON_SAVE] !== target[CON_SAVE] 
+        || data[level][DATA_TARGET][WIS_SAVE] !== target[WIS_SAVE] || data[level][DATA_TARGET][INT_SAVE] !== target[INT_SAVE] || data[level][DATA_TARGET][CHA_SAVE] !== target[CHA_SAVE]
+        ||  target[TARGET_STATS_TEMPLATE] == STATS_CUSTOM) {
+        target[TARGET_STATS_TEMPLATE] = 2;
+        $target.find(`[name=targetstats${level}]`).val([target[TARGET_STATS_TEMPLATE]]);
+        $target.find('input, select').removeAttr('disabled').on('change',updateStats);
+    }
+    let repopulate = false;
+    if(target[TARGET_STATS_TEMPLATE] === STATS_MM && target[TARGET_STATS_TEMPLATE] !== data[level][DATA_TARGET][TARGET_STATS_TEMPLATE]) {
+        let newTarget = TARGETDATA[level];
+        newTarget[TARGET_STATS_TEMPLATE] = STATS_MM;
+        target = newTarget;
+        $target.find('input, select').not('[type=radio]').attr('disabled','disabled').off('change',updateStats);
+        repopulate = true;
+    }
+    if(target[TARGET_STATS_TEMPLATE] === STATS_TREANTMONK && target[TARGET_STATS_TEMPLATE] !== data[level][DATA_TARGET][TARGET_STATS_TEMPLATE]) {
+        let newTarget = TARGETTREANTMONK[level];
+        newTarget[TARGET_STATS_TEMPLATE] = STATS_TREANTMONK;
+        target = newTarget;
+        $target.find('input, select').not('[type=radio]').attr('disabled','disabled').off('change',updateStats);
+        repopulate = true;
+    }
+    
     data[level][DATA_PLAYER] = player;
     data[level][DATA_TARGET] = target;
     calculateLevel(level);
+    if(repopulate) {
+        populate();
+    }
 }
 
 function updateAction(event) {
@@ -375,13 +406,37 @@ const TARGETDATA = [
     [19.14,7.71,5.43,8.57,2.57,8.29,4.14],
     [20.00,-5.00,11.00,6.00,11.00,9.00,5.00],
     [19.00,8.00,2.00,12.00,5.00,9.00,6.00],
-    [20.00,7.75,6.75,8.25,3.25,9.25,5.75],
+    [20.00,7.75,6.75,8.25,3.25,9.25,5.75], //CR20
     [20.80,6.20,8.40,7.60,6.20,9.20,6.40],
     [21.00,8.33,8.67,10.00,2.67,9.67,6.33],
     [20.67,13.00,6.67,11.33,4.00,9.83,6.00],
     [22.00,10.00,8.00,9.00,4.00,9.50,8.50],
     [23.00,10.00,8.00,10.00,-4.00,8.00,-1.00],
-    [25.00,10.00,9.00,10.00,5.00,9.00,9.00] //CR20
+    [25.00,10.00,9.00,10.00,5.00,9.00,9.00]
+]
+
+const TARGETTREANTMONK = [
+    [13,0,0,0,0,0,0], //0
+    [14,0,0,0,0,0,0], //1
+    [14,0,0,0,0,0,0],
+    [14,0,0,0,0,0,0],
+    [15,1,1,1,1,1,1], 
+    [16,2,2,2,2,2,2], //5
+    [16,2,2,2,2,2,2], 
+    [16,2,2,2,2,2,2], 
+    [17,3,3,3,3,3,3], //8
+    [18,4,4,4,4,4,4], //9
+    [18,4,4,4,4,4,4], 
+    [18,4,4,4,4,4,4], 
+    [18,4,4,4,4,4,4], 
+    [19,5,5,5,5,5,5], //13
+    [19,5,5,5,5,5,5], 
+    [19,5,5,5,5,5,5], 
+    [19,5,5,5,5,5,5], 
+    [20,6,6,6,6,6,6], //17
+    [20,6,6,6,6,6,6], 
+    [20,6,6,6,6,6,6], 
+    [20,6,6,6,6,6,6], //20
 ]
 
 init();
