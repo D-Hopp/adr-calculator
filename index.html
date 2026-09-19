@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D 5.5e ADR Calculator | Average Damage per Round</title>
+  <!-- Chart.js for 20-Level Progression Visualizer -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    /* ==========================================================================
+       CSS CUSTOM PROPERTIES (THEME & DESIGN SYSTEM)
+       ========================================================================== */
+    :root {
+      --color-bg: #090d16;
+      --color-surface: #131b2e;
+      --color-surface-elevated: #1a243d;
+      --color-surface-hover: #223052;
+      --color-border: #23304d;
+      --color-border-focus: #e11d48;
+      
+      --color-primary: #e11d48;
+      --color-primary-hover: #f43f5e;
+      --color-primary-subtle: rgba(225, 29, 72, 0.15);
+      
+      --color-accent: #f59e0b;
+      --color-accent-subtle: rgba(245, 158, 11, 0.15);
+      
+      --color-success: #10b981;
+      --color-success-subtle: rgba(16, 185, 129, 0.15);
+      
+      --color-danger: #ef4444;
+      --color-danger-subtle: rgba(239, 68, 68, 0.15);
+      
+      --color-text: #f8fafc;
+      --color-text-secondary: #94a3b8;
+      --color-text-muted: #64748b;
+      
+      --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+      
+      --transition: 0.18s ease-in-out;
+    }
+
+    /* ==========================================================================
+       GLOBAL RESETS & BASE STYLES
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-family);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    input, select, textarea, button {
+      font: inherit;
+      color: inherit;
+    }
+
+    /* ==========================================================================
+       BEM: APPLICATION LAYOUT (.adr-app)
+       ========================================================================== */
+    .adr-app {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 4rem 1rem;
+    }
+
+    /* ==========================================================================
+       BEM: HEADER & GLOBAL STATS (.adr-header)
+       ========================================================================== */
+    .adr-header {
+      background: linear-gradient(135deg, var(--color-surface) 0%, #172138 100%);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-md);
+    }
+
+    .adr-header__top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: 1rem;
+    }
+
+    .adr-header__title-group {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+
+    .adr-header__title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .adr-header__title span {
+      color: var(--color-primary);
+    }
+
+    .adr-header__subtitle {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      font-weight: 500;
+    }
+
+    .adr-header__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    /* Tier Performance Summary */
+    .adr-header__stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .tier-stat {
+      background: rgba(11, 15, 25, 0.6);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tier-stat__label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+      font-weight: 600;
+    }
+
+    .tier-stat__val {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--color-accent);
+      font-family: var(--font-mono);
+      margin-top: 0.2rem;
+    }
+
+    /* ==========================================================================
+       BEM: BUTTONS (.btn)
+       ========================================================================== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--radius-md);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: var(--transition);
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .btn--primary {
+      background-color: var(--color-primary);
+      color: #fff;
+    }
+    .btn--primary:hover {
+      background-color: var(--color-primary-hover);
+    }
+
+    .btn--secondary {
+      background-color: var(--color-surface-elevated);
+      border-color: var(--color-border);
+      color: var(--color-text);
+    }
+    .btn--secondary:hover {
+      background-color: var(--color-surface-hover);
+      border-color: var(--color-text-muted);
+    }
+
+    .btn--danger {
+      background-color: transparent;
+      color: var(--color-danger);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    .btn--danger:hover {
+      background-color: var(--color-danger-subtle);
+      border-color: var(--color-danger);
+    }
+
+    .btn--clone {
+      background-color: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    .btn--clone:hover {
+      background-color: rgba(245, 158, 11, 0.25);
+      border-color: var(--color-accent);
+    }
+
+    .btn--sm {
+      padding: 0.28rem 0.55rem;
+      font-size: 0.75rem;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ==========================================================================
+       BEM: CHART PANEL (.chart-panel)
+       ========================================================================== */
+    .chart-panel {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition);
+    }
+
+    .chart-panel--collapsed .chart-panel__body {
+      display: none;
+    }
+
+    .chart-panel__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .chart-panel__title {
+      font-size: 1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .chart-panel__legend {
+      display: flex;
+      gap: 1.25rem;
+      font-size: 0.8rem;
+    }
+
+    .chart-panel__legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .chart-panel__indicator {
+      width: 12px;
+      height: 3px;
+      border-radius: 2px;
+    }
+    .chart-panel__indicator--char {
+      background-color: var(--color-primary);
+    }
+    .chart-panel__indicator--baseline {
+      background-color: var(--color-accent);
+      border-top: 1px dashed var(--color-accent);
+    }
+
+    .chart-panel__body {
+      margin-top: 1rem;
+      position: relative;
+      height: 280px;
+      width: 100%;
+    }
+
+    /* ==========================================================================
+       BEM: LEVEL ACCORDION & CARDS (.level-card)
+       ========================================================================== */
+    .level-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .level-card {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: border-color var(--transition);
+    }
+
+    .level-card[open] {
+      border-color: rgba(225, 29, 72, 0.5);
+    }
+
+    .level-card__header {
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: var(--color-surface-elevated);
+      cursor: pointer;
+      user-select: none;
+      transition: background-color var(--transition);
+      list-style: none;
+    }
+
+    .level-card__header::-webkit-details-marker {
+      display: none;
+    }
+
+    .level-card__header:hover {
+      background-color: var(--color-surface-hover);
+    }
+
+    .level-card__title-area {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .level-card__title {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .badge--pb {
+      background-color: rgba(148, 163, 184, 0.15);
+      color: var(--color-text-secondary);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .badge--adr {
+      background-color: var(--color-primary-subtle);
+      color: #fda4af;
+      border: 1px solid rgba(225, 29, 72, 0.4);
+      font-size: 0.9rem;
+      padding: 0.2rem 0.65rem;
+    }
+
+    .level-card__meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .level-card__chevron {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      transition: transform var(--transition);
+    }
+
+    .level-card[open] .level-card__chevron {
+      transform: rotate(180deg);
+    }
+
+    .level-card__body {
+      padding: 1.25rem;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .level-card__clone-bar {
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Grid layout for character and target stats inside level */
+    .level-card__config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .level-card__config-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ==========================================================================
+       BEM: STATS GRID (.stats-grid)
+       ========================================================================== */
+    .config-box {
+      background: rgba(11, 15, 25, 0.5);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+    }
+
+    .config-box__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .config-box__title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-secondary);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.25rem;
+    }
+
+    .stat-item__label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+    }
+
+    .stat-item__input {
+      width: 100%;
+      text-align: center;
+      background: transparent;
+      border: none;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--color-text);
+      outline: none;
+    }
+
+    .stat-item__mod {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--color-accent);
+      font-weight: 600;
+    }
+
+    /* Target Stats Styles */
+    .target-radio-group {
+      display: flex;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .target-radio-label {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      cursor: pointer;
+      color: var(--color-text-secondary);
+    }
+
+    .target-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.4rem;
+    }
+
+    @media (max-width: 600px) {
+      .target-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .target-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.25rem;
+    }
+
+    .target-item__label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+    }
+
+    .target-item__input {
+      width: 100%;
+      text-align: center;
+      background: transparent;
+      border: none;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--color-text);
+      outline: none;
+    }
+
+    .target-item__input:disabled {
+      color: var(--color-text-secondary);
+      opacity: 0.8;
+      cursor: not-allowed;
+    }
+
+    /* ==========================================================================
+       BEM: ACTION CATEGORIES & ROWS (.action-category, .action-row)
+       ========================================================================== */
+    .category-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .action-category {
+      background-color: rgba(19, 27, 46, 0.4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+    }
+
+    .action-category__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .action-category__title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .action-category__title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
+    .action-category__subtotal {
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--color-accent);
+    }
+
+    .action-category__rows {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    /* Single Action Card / Row */
+    .action-row {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      transition: border-color var(--transition);
+    }
+
+    .action-row:hover {
+      border-color: var(--color-surface-hover);
+    }
+
+    .action-row__top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.65rem;
+    }
+
+    .action-row__name-input {
+      flex: 1;
+      background-color: rgba(11, 15, 25, 0.5);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.6rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .action-row__name-input:focus {
+      border-color: var(--color-primary);
+    }
+
+    .action-row__result-badge {
+      background-color: var(--color-primary-subtle);
+      border: 1px solid rgba(225, 29, 72, 0.4);
+      color: #fecdd3;
+      padding: 0.3rem 0.6rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .action-row__actions {
+      display: flex;
+      gap: 0.35rem;
+    }
+
+    /* Grid of inputs inside action row */
+    .action-row__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .action-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .action-field__label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .action-field__input,
+    .action-field__select {
+      width: 100%;
+      background-color: rgba(11, 15, 25, 0.6);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.32rem 0.45rem;
+      font-size: 0.82rem;
+      color: var(--color-text);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .action-field__input:focus,
+    .action-field__select:focus {
+      border-color: var(--color-primary);
+    }
+
+    .action-field__input--invalid {
+      border-color: var(--color-danger) !important;
+      background-color: var(--color-danger-subtle);
+    }
+
+    /* ==========================================================================
+       BEM: MODAL (.modal) & TOAST (.toast)
+       ========================================================================== */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal--open {
+      display: flex;
+    }
+
+    .modal__backdrop {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(2px);
+    }
+
+    .modal__dialog {
+      position: relative;
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 600px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow-lg);
+      z-index: 1000;
+    }
+
+    .modal__title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal__desc {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .modal__textarea {
+      width: 100%;
+      height: 220px;
+      background-color: rgba(11, 15, 25, 0.75);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--color-text);
+      resize: vertical;
+      outline: none;
+      margin-bottom: 1rem;
+    }
+
+    .modal__textarea:focus {
+      border-color: var(--color-primary);
+    }
+
+    .modal__footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background-color: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      border-left: 4px solid var(--color-success);
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.85rem;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s ease-out;
+      z-index: 10000;
+      pointer-events: none;
+    }
+
+    .toast--visible {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="adr-app">
+    <!-- APP HEADER -->
+    <header class="adr-header">
+      <div class="adr-header__top">
+        <div class="adr-header__title-group">
+          <h1 class="adr-header__title">D&D 5.5e <span>ADR</span> Calculator</h1>
+          <span class="adr-header__subtitle">Average Damage per Round (2024 Ruleset)</span>
+        </div>
+        <div class="adr-header__actions">
+          <button class="btn btn--secondary" id="btnToggleChart">
+            <span>📊</span> Diagramm umschalten
+          </button>
+          <button class="btn btn--secondary" id="btnExport">
+            <span>💾</span> JSON Export
+          </button>
+          <button class="btn btn--secondary" id="btnImport">
+            <span>📂</span> JSON Import
+          </button>
+          <button class="btn btn--danger" id="btnReset">
+            <span>🔄</span> Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- TIER PERFORMANCE SUMMARY -->
+      <div class="adr-header__stats">
+        <div class="tier-stat">
+          <span class="tier-stat__label">Tier 1 (Lvl 1–4)</span>
+          <span class="tier-stat__val" id="tier1Avg">0.00 ADR</span>
+        </div>
+        <div class="tier-stat">
+          <span class="tier-stat__label">Tier 2 (Lvl 5–10)</span>
+          <span class="tier-stat__val" id="tier2Avg">0.00 ADR</span>
+        </div>
+        <div class="tier-stat">
+          <span class="tier-stat__label">Tier 3 (Lvl 11–16)</span>
+          <span class="tier-stat__val" id="tier3Avg">0.00 ADR</span>
+        </div>
+        <div class="tier-stat">
+          <span class="tier-stat__label">Tier 4 (Lvl 17–20)</span>
+          <span class="tier-stat__val" id="tier4Avg">0.00 ADR</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- PROGRESSION CHART PANEL -->
+    <section class="chart-panel" id="chartPanel">
+      <div class="chart-panel__header" id="chartToggleHeader">
+        <div class="chart-panel__title">
+          <span>📈</span> Schadens-Progression (Level 1–20)
+        </div>
+        <div class="chart-panel__legend">
+          <div class="chart-panel__legend-item">
+            <span class="chart-panel__indicator chart-panel__indicator--char"></span>
+            <span>Dein Charakter (ADR)</span>
+          </div>
+          <div class="chart-panel__legend-item">
+            <span class="chart-panel__indicator chart-panel__indicator--baseline"></span>
+            <span>Treantmonk Baseline</span>
+          </div>
+        </div>
+      </div>
+      <div class="chart-panel__body">
+        <canvas id="progressionChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 20-LEVEL ACCORDION LIST -->
+    <main class="level-list" id="levelListContainer">
+      <!-- Populated via JavaScript -->
+    </main>
+  </div>
+
+  <!-- MODAL FOR IMPORT / EXPORT -->
+  <div class="modal" id="dataModal">
+    <div class="modal__backdrop" id="modalBackdrop"></div>
+    <div class="modal__dialog">
+      <h3 class="modal__title" id="modalTitle">JSON Daten</h3>
+      <p class="modal__desc" id="modalDesc">Kopiere die Daten oder füge dein gespeichertes JSON ein.</p>
+      <textarea class="modal__textarea" id="modalTextarea"></textarea>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="modalBtnDownload" style="margin-right:auto; display:none;">
+          ⬇️ Als Datei herunterladen
+        </button>
+        <button class="btn btn--secondary" id="modalBtnClose">Schließen</button>
+        <button class="btn btn--primary" id="modalBtnAction">Speichern / Importieren</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast">Aktion erfolgreich ausgeführt!</div>
+
+  <!-- JAVASCRIPT ENGINE -->
+  <script>
+    /* ==========================================================================
+       1. CONSTANTS & BENCHMARKS (MONSTER MANUAL & TREANTMONK BASELINES)
+       ========================================================================== */
+    // Target Profiles: 0: MM Average, 1: Treantmonk, 2: Custom
+    const TARGET_MM = 0, TARGET_TREANTMONK = 1, TARGET_CUSTOM = 2;
+    
+    // Defenses index
+    const DEF_AC = 'ac', DEF_STR = 'str', DEF_DEX = 'dex', DEF_CON = 'con', DEF_INT = 'int', DEF_WIS = 'wis', DEF_CHA = 'cha';
+
+    const TARGETDATA = [
+      [11.13,-2.38,0.88,0.00,-3.69,0.19,-2.97], //CR0
+      [12.90,0.81,1.74,1.00,-1.48,0.50,-0.74], //CR1
+      [13.36,2.20,1.63,1.88,-1.44,0.86,-1.00],
+      [14.15,2.80,1.66,2.20,-0.61,1.27,-0.24],
+      [14.48,1.89,1.70,2.41,-0.04,1.33,0.89],
+      [15.28,3.86,1.58,3.94,-1.33,1.28,-0.19],
+      [15.65,3.30,3.57,3.30,0.65,3.17,1.30],
+      [15.94,4.25,2.69,4.31,0.44,2.94,0.75],
+      [15.83,4.48,2.52,4.65,1.22,3.74,1.30],
+      [16.75,6.17,1.58,5.67,0.67,2.92,2.33],
+      [17.50,4.13,4.94,5.31,3.06,5.94,4.44],
+      [17.17,5.33,4.42,5.08,1.58,4.33,3.83],
+      [17.86,4.86,5.14,4.71,5.00,6.14,4.86],
+      [17.33,5.44,4.22,6.89,2.89,5.89,5.00],
+      [18.50,5.25,5.50,6.50,3.50,6.75,5.25],
+      [17.67,7.17,4.33,5.50,2.17,6.67,4.00],
+      [18.71,7.14,3.86,7.86,2.86,6.29,4.71],
+      [19.14,7.71,5.43,8.57,2.57,8.29,4.14],
+      [20.00,-5.00,11.00,6.00,11.00,9.00,5.00],
+      [19.00,8.00,2.00,12.00,5.00,9.00,6.00],
+      [20.00,7.75,6.75,8.25,3.25,9.25,5.75], //CR20
+      [20.80,6.20,8.40,7.60,6.20,9.20,6.40],
+      [21.00,8.33,8.67,10.00,2.67,9.67,6.33],
+      [20.67,13.00,6.67,11.33,4.00,9.83,6.00],
+      [22.00,10.00,8.00,9.00,4.00,9.50,8.50],
+      [23.00,10.00,8.00,10.00,-4.00,8.00,-1.00],
+      [25.00,10.00,9.00,10.00,5.00,9.00,9.00]
+    ];
+
+    const TARGETTREANTMONK = [
+      [13,0,0,0,0,0,0], //0
+      [14,0,0,0,0,0,0], //1
+      [14,0,0,0,0,0,0],
+      [14,0,0,0,0,0,0],
+      [15,1,1,1,1,1,1], 
+      [16,2,2,2,2,2,2], //5
+      [16,2,2,2,2,2,2], 
+      [16,2,2,2,2,2,2], 
+      [17,3,3,3,3,3,3], //8
+      [18,4,4,4,4,4,4], //9
+      [18,4,4,4,4,4,4], 
+      [18,4,4,4,4,4,4], 
+      [18,4,4,4,4,4,4], 
+      [19,5,5,5,5,5,5], //13
+      [19,5,5,5,5,5,5], 
+      [19,5,5,5,5,5,5], 
+      [19,5,5,5,5,5,5], 
+      [20,6,6,6,6,6,6], //17
+      [20,6,6,6,6,6,6], 
+      [20,6,6,6,6,6,6], 
+      [20,6,6,6,6,6,6]  //20
+    ];
+
+    // Monotone Glättung: Zielwerte (Saves und AC) verringern sich niemals mit höheren Leveln (Maximum der vorherigen Level)
+    // und alle Werte werden auf ganze Zahlen gerundet.
+    for (let statIdx = 0; statIdx < 7; statIdx++) {
+      let maxVal = -100;
+      for (let lvl = 1; lvl <= 20; lvl++) {
+        if (TARGETDATA[lvl][statIdx] > maxVal) {
+          maxVal = TARGETDATA[lvl][statIdx];
+        }
+        TARGETDATA[lvl][statIdx] = Math.round(maxVal) + 0;
+      }
+    }
+
+    function getTargetPreset(profileType, lvl) {
+      const arr = (profileType === TARGET_TREANTMONK) ? TARGETTREANTMONK[lvl] : TARGETDATA[lvl];
+      if (!arr) return { ac: 10, str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
+      return {
+        ac: Math.round(arr[0]) + 0,
+        str: Math.round(arr[1]) + 0,
+        dex: Math.round(arr[2]) + 0,
+        con: Math.round(arr[3]) + 0,
+        int: Math.round(arr[4]) + 0,
+        wis: Math.round(arr[5]) + 0,
+        cha: Math.round(arr[6]) + 0
+      };
+    }
+
+    // Standard Treantmonk DPR Baseline values (EB + AB + Hex baseline)
+    const TREANTMONK_DPR_BASELINE = [
+      null,
+      6.18,  8.25,  8.25,  9.75,  17.70, // 1 - 5
+      17.70, 17.70, 18.90, 20.10, 20.10, // 6 - 10
+      28.50, 28.50, 29.80, 29.80, 29.80, // 11 - 15
+      29.80, 39.50, 41.20, 41.20, 41.20  // 16 - 20
+    ];
+
+    /* ==========================================================================
+       2. APPLICATION STATE & DATA MODEL
+       ========================================================================== */
+    const STORAGE_KEY = 'dnd_55e_adr_calculator_data_v3';
+    let appData = [];
+    let progressionChart = null;
+
+    // Helper: calculate D&D ability modifier
+    function getModifier(val) {
+      return Math.floor((parseInt(val || 10, 10) - 10) / 2);
+    }
+
+    // Helper: calculate Proficiency Bonus by level
+    function getProfBonus(level) {
+      return Math.floor((level - 1) / 4) + 2;
+    }
+
+    // Default template for a new Level
+    function createDefaultLevel(lvl) {
+      const targetCopy = getTargetPreset(TARGET_MM, lvl);
+      return {
+        level: lvl,
+        stats: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+        targetProfile: TARGET_MM,
+        target: targetCopy,
+        categories: {
+          action: [],
+          bonusaction: [],
+          reaction: [],
+          offturn: []
+        }
+      };
+    }
+
+    // Create an Action object
+    function createAction({
+      name = 'Angriff',
+      rollMode = 'normal', // normal, advantage, disadvantage
+      defense = DEF_AC,    // ac, str, dex, con, int, wis, cha
+      hit = 'prof + str',
+      damage = '1d8 + str',
+      critOn = 20,
+      critBonus = '',      // empty string = auto extract dice
+      missDamage = '',     // e.g. 'str' for Graze mastery
+      saveMode = 'half',   // half or none
+      multiplier = 1
+    } = {}) {
+      return {
+        id: 'act_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36),
+        name,
+        rollMode,
+        defense,
+        hit,
+        damage,
+        critOn: parseInt(critOn, 10) || 20,
+        critBonus,
+        missDamage,
+        saveMode,
+        multiplier: parseFloat(multiplier) || 1
+      };
+    }
+
+    /* Initialize initial state (with sample Level 1 Fighter with Greatsword + Graze) */
+    function initializeData() {
+      const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('dnd_55e_adr_calculator_data_v2') || localStorage.getItem('dnd_55e_adr_calculator_data_v1');
+      if (stored) {
+        try {
+          appData = JSON.parse(stored);
+          if (Array.isArray(appData) && appData.length === 21) {
+            // Update preset targets to the new TARGETDATA / TARGETTREANTMONK tables
+            for (let i = 1; i <= 20; i++) {
+              if (appData[i].targetProfile === TARGET_MM || appData[i].targetProfile === TARGET_TREANTMONK) {
+                appData[i].target = getTargetPreset(appData[i].targetProfile, i);
+              }
+            }
+            saveData();
+            return;
+          }
+        } catch (e) {
+          console.warn('Fehler beim Laden von LocalStorage:', e);
+        }
+      }
+
+      // Fresh default data
+      appData = [null];
+      for (let i = 1; i <= 20; i++) {
+        appData.push(createDefaultLevel(i));
+      }
+
+      // Initial Preset on Level 1: Fighter with 16 STR and Greatsword (Graze Mastery)
+      appData[1].stats.str = 16;
+      appData[1].stats.con = 14;
+      appData[1].categories.action.push(createAction({
+        name: 'Greatsword (Graze)',
+        rollMode: 'normal',
+        defense: DEF_AC,
+        hit: 'prof + str',
+        damage: '2d6 + str',
+        critOn: 20,
+        critBonus: '',
+        missDamage: 'str',
+        multiplier: 1
+      }));
+    }
+
+    function saveData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      } catch (e) {
+        console.error('Speichern fehlgeschlagen:', e);
+      }
+    }
+
+    /* ==========================================================================
+       3. MATHEMATICAL ENGINE & DICE / FORMULA PARSER
+       ========================================================================== */
+    const DICE_AVERAGES = {
+      4: 2.5,
+      6: 3.5,
+      8: 4.5,
+      10: 5.5,
+      12: 6.5,
+      20: 10.5,
+      100: 50.5
+    };
+
+    /**
+     * Safely parses a formula string containing dice (e.g. 2d6, 1d8) and variables (str, dex, prof, level).
+     */
+    function parseFormula(formulaStr, playerStats, level) {
+      if (!formulaStr || typeof formulaStr !== 'string') return 0;
+      let expr = formulaStr.toLowerCase().trim();
+      if (!expr) return 0;
+
+      const pb = getProfBonus(level);
+      const vars = {
+        'prof': pb,
+        'pb': pb,
+        'level': level,
+        'str': getModifier(playerStats.str),
+        'dex': getModifier(playerStats.dex),
+        'con': getModifier(playerStats.con),
+        'int': getModifier(playerStats.int),
+        'wis': getModifier(playerStats.wis),
+        'cha': getModifier(playerStats.cha)
+      };
+
+      // Substitute variables
+      for (const [v, val] of Object.entries(vars)) {
+        const regex = new RegExp(`\\b${v}\\b`, 'g');
+        expr = expr.replace(regex, `(${val})`);
+      }
+
+      // Substitute dice notations: e.g. 2d6 -> (2 * 3.5), d8 -> (1 * 4.5)
+      expr = expr.replace(/(\d*)\s*d(\d+)/g, (match, countStr, sidesStr) => {
+        const count = countStr === '' ? 1 : parseInt(countStr, 10);
+        const sides = parseInt(sidesStr, 10);
+        const avg = DICE_AVERAGES[sides] || ((sides + 1) / 2);
+        return `(${count} * ${avg})`;
+      });
+
+      // Sanitize: allow only numbers, math operators, spaces and parentheses
+      if (!/^[0-9+\-*/().\s]+$/.test(expr)) {
+        return NaN;
+      }
+
+      try {
+        // Safe evaluation of pure arithmetic expression
+        const val = Function(`'use strict'; return (${expr});`)();
+        return isNaN(val) ? NaN : Number(val);
+      } catch (err) {
+        return NaN;
+      }
+    }
+
+    /**
+     * Extracts only the dice average from a damage expression.
+     * Used for D&D 2024 Crits when CritBonus is left empty (rolls dice twice).
+     */
+    function extractDiceOnly(formulaStr) {
+      if (!formulaStr || typeof formulaStr !== 'string') return 0;
+      let totalDiceAvg = 0;
+      const regex = /(\d*)\s*d(\d+)/gi;
+      let match;
+      while ((match = regex.exec(formulaStr)) !== null) {
+        const count = match[1] === '' ? 1 : parseInt(match[1], 10);
+        const sides = parseInt(match[2], 10);
+        const avg = DICE_AVERAGES[sides] || ((sides + 1) / 2);
+        totalDiceAvg += count * avg;
+      }
+      return totalDiceAvg;
+    }
+
+    /**
+     * Resolves the Spell Save DC from the Hit/DC input.
+     * If input is a bonus or formula (< 10), DC = 8 + parsed.
+     * If input is an absolute number >= 10, use it directly.
+     */
+    function resolveDC(hitFieldStr, playerStats, level) {
+      const parsed = parseFormula(hitFieldStr, playerStats, level);
+      if (isNaN(parsed)) return 10;
+      if (parsed >= 10 && !/[a-z]/i.test(hitFieldStr)) {
+        return parsed; // Direct DC (e.g. "15")
+      }
+      return 8 + parsed; // Bonus input (e.g. "prof + int" -> 8 + 5 = 13)
+    }
+
+    /**
+     * Calculates the Average Damage per Round (ADR) of a single action.
+     */
+    function calculateActionADR(action, playerStats, targetStats, level) {
+      const mult = action.multiplier || 1;
+      const isAttackRoll = (action.defense === DEF_AC);
+
+      if (isAttackRoll) {
+        // 1. Attack Roll vs AC (D&D 2024 Rules)
+        const toHit = parseFormula(action.hit, playerStats, level);
+        const targetAC = targetStats.ac || 10;
+        if (isNaN(toHit)) return { adr: 0, hasError: true };
+
+        // Threshold on single d20
+        const k = 21 - targetAC + toHit;
+        // Nat 1 always misses (max 95%), Nat 20 always hits (min 5%)
+        let pHitBase = Math.max(0.05, Math.min(0.95, k / 20));
+        const critOn = Math.min(20, Math.max(1, action.critOn || 20));
+        let pCritBase = Math.max(0.05, Math.min(1.0, (21 - critOn) / 20));
+
+        // A critical hit always hits
+        pHitBase = Math.max(pHitBase, pCritBase);
+
+        // Apply Advantage / Disadvantage
+        let pHit = pHitBase;
+        let pCrit = pCritBase;
+        if (action.rollMode === 'advantage') {
+          pHit = 2 * pHitBase - (pHitBase * pHitBase);
+          pCrit = 2 * pCritBase - (pCritBase * pCritBase);
+        } else if (action.rollMode === 'disadvantage') {
+          pHit = pHitBase * pHitBase;
+          pCrit = pCritBase * pCritBase;
+        }
+
+        const pRegular = Math.max(0, pHit - pCrit);
+        const pMiss = Math.max(0, 1 - pHit);
+
+        const regularDamage = parseFormula(action.damage, playerStats, level);
+        if (isNaN(regularDamage)) return { adr: 0, hasError: true };
+
+        // 2024 Crit rule: only dice are doubled!
+        let critBonusDamage = 0;
+        if (action.critBonus && action.critBonus.trim() !== '') {
+          critBonusDamage = parseFormula(action.critBonus, playerStats, level);
+          if (isNaN(critBonusDamage)) critBonusDamage = 0;
+        } else {
+          critBonusDamage = extractDiceOnly(action.damage);
+        }
+
+        // 2024 Graze Mastery: damage on miss
+        let missDamage = 0;
+        if (action.missDamage && action.missDamage.trim() !== '') {
+          missDamage = parseFormula(action.missDamage, playerStats, level);
+          if (isNaN(missDamage)) missDamage = 0;
+        }
+
+        const total = mult * (
+          (pRegular * regularDamage) +
+          (pCrit * (regularDamage + critBonusDamage)) +
+          (pMiss * missDamage)
+        );
+
+        return { adr: Math.round(total * 100) / 100, hasError: false };
+
+      } else {
+        // 2. Saving Throw (D&D 2024 Rules: NO Nat 1 / Nat 20 auto-rules!)
+        const dc = resolveDC(action.hit, playerStats, level);
+        const saveBonus = targetStats[action.defense] || 0;
+        const damage = parseFormula(action.damage, playerStats, level);
+        if (isNaN(damage)) return { adr: 0, hasError: true };
+
+        // Target save success chance
+        let pSaveBase = Math.max(0.0, Math.min(1.0, (21 - dc + saveBonus) / 20));
+        let pSave = pSaveBase;
+        if (action.rollMode === 'advantage') {
+          // If the target has advantage against the save
+          pSave = 2 * pSaveBase - (pSaveBase * pSaveBase);
+        } else if (action.rollMode === 'disadvantage') {
+          pSave = pSaveBase * pSaveBase;
+        }
+
+        const pFail = 1 - pSave; // Player "hits"
+        const saveMult = (action.saveMode === 'half') ? 0.5 : 0.0;
+
+        const total = mult * (
+          (pFail * damage) +
+          (pSave * saveMult * damage)
+        );
+
+        return { adr: Math.round(total * 100) / 100, hasError: false };
+      }
+    }
+
+    /**
+     * Calculates the total ADR for an entire level.
+     */
+    function calculateLevelADR(levelNum) {
+      const lvlData = appData[levelNum];
+      if (!lvlData) return 0;
+      let sum = 0;
+      for (const cat of ['action', 'bonusaction', 'reaction', 'offturn']) {
+        for (const act of lvlData.categories[cat]) {
+          const res = calculateActionADR(act, lvlData.stats, lvlData.target, levelNum);
+          sum += res.adr;
+        }
+      }
+      return Math.round(sum * 100) / 100;
+    }
+
+    /* ==========================================================================
+       4. UI RENDERING & EVENT CONTROLLERS
+       ========================================================================== */
+    function renderApp() {
+      renderLevelList();
+      updateAllCalculations();
+      initProgressionChart();
+    }
+
+    function renderLevelList() {
+      const container = document.getElementById('levelListContainer');
+      container.innerHTML = '';
+
+      for (let lvl = 1; lvl <= 20; lvl++) {
+        const lvlData = appData[lvl];
+        const pb = getProfBonus(lvl);
+
+        const card = document.createElement('details');
+        card.className = 'level-card';
+        card.id = `levelCard_${lvl}`;
+        card.dataset.level = lvl;
+        if (lvl === 1) card.open = true;
+
+        // Header (Summary)
+        const header = document.createElement('summary');
+        header.className = 'level-card__header';
+        header.innerHTML = `
+          <div class="level-card__title-area">
+            <span class="level-card__title">Level ${lvl}</span>
+            <span class="badge badge--pb">PB +${pb}</span>
+            <span class="badge badge--adr" id="levelTotalBadge_${lvl}">[ 0.00 ADR ]</span>
+          </div>
+          <div class="level-card__meta">
+            <span class="level-card__chevron">▼</span>
+          </div>
+        `;
+
+        // Body
+        const body = document.createElement('div');
+        body.className = 'level-card__body';
+
+        // Clone button (from Level 2)
+        if (lvl > 1) {
+          const cloneBar = document.createElement('div');
+          cloneBar.className = 'level-card__clone-bar';
+          cloneBar.innerHTML = `
+            <button class="btn btn--clone btn--sm" data-clone="${lvl}">
+              <span>📋</span> Level ${lvl - 1} hierher kopieren
+            </button>
+          `;
+          cloneBar.querySelector('[data-clone]').addEventListener('click', (e) => {
+            e.stopPropagation();
+            clonePreviousLevel(lvl);
+          });
+          body.appendChild(cloneBar);
+        }
+
+        // Config Grid: Stats & Target
+        const configGrid = document.createElement('div');
+        configGrid.className = 'level-card__config-grid';
+
+        // Stats Box
+        const statsBox = document.createElement('div');
+        statsBox.className = 'config-box';
+        statsBox.innerHTML = `
+          <div class="config-box__header">
+            <span class="config-box__title">Attribute</span>
+          </div>
+          <div class="stats-grid">
+            ${['str', 'dex', 'con', 'int', 'wis', 'cha'].map(s => `
+              <div class="stat-item">
+                <label class="stat-item__label">${s}</label>
+                <input type="number" min="1" max="30" class="stat-item__input" data-stat="${s}" data-level="${lvl}" value="${lvlData.stats[s]}">
+                <span class="stat-item__mod" id="mod_${lvl}_${s}">${getModifier(lvlData.stats[s]) >= 0 ? '+' : ''}${getModifier(lvlData.stats[s])}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        configGrid.appendChild(statsBox);
+
+        // Target Box
+        const targetBox = document.createElement('div');
+        targetBox.className = 'config-box';
+        targetBox.innerHTML = `
+          <div class="config-box__header">
+            <span class="config-box__title">Zielwerte</span>
+            <div class="target-radio-group">
+              <label class="target-radio-label">
+                <input type="radio" name="targetProfile_${lvl}" value="${TARGET_MM}" ${lvlData.targetProfile === TARGET_MM ? 'checked' : ''}> MM Avg
+              </label>
+              <label class="target-radio-label">
+                <input type="radio" name="targetProfile_${lvl}" value="${TARGET_TREANTMONK}" ${lvlData.targetProfile === TARGET_TREANTMONK ? 'checked' : ''}> Treantmonk
+              </label>
+              <label class="target-radio-label">
+                <input type="radio" name="targetProfile_${lvl}" value="${TARGET_CUSTOM}" ${lvlData.targetProfile === TARGET_CUSTOM ? 'checked' : ''}> Custom
+              </label>
+            </div>
+          </div>
+          <div class="target-grid" id="targetGrid_${lvl}">
+            <div class="target-item">
+              <label class="target-item__label">AC</label>
+              <input type="number" step="any" class="target-item__input" data-target-field="ac" data-level="${lvl}" value="${lvlData.target.ac}" ${lvlData.targetProfile !== TARGET_CUSTOM ? 'disabled' : ''}>
+            </div>
+            ${['str', 'dex', 'con', 'int', 'wis', 'cha'].map(s => `
+              <div class="target-item">
+                <label class="target-item__label">${s} SV</label>
+                <input type="number" step="any" class="target-item__input" data-target-field="${s}" data-level="${lvl}" value="${lvlData.target[s]}" ${lvlData.targetProfile !== TARGET_CUSTOM ? 'disabled' : ''}>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        configGrid.appendChild(targetBox);
+        body.appendChild(configGrid);
+
+        // Action Categories Container
+        const catList = document.createElement('div');
+        catList.className = 'category-list';
+        const catConfig = [
+          { key: 'action', title: 'Action (inkl. Nick Extra Attacks)' },
+          { key: 'bonusaction', title: 'Bonus Action' },
+          { key: 'reaction', title: 'Reaction' },
+          { key: 'offturn', title: 'Offturn / Sonstige' }
+        ];
+
+        catConfig.forEach(cat => {
+          const catSec = document.createElement('section');
+          catSec.className = 'action-category';
+          catSec.dataset.category = cat.key;
+          catSec.innerHTML = `
+            <div class="action-category__header">
+              <div class="action-category__title-group">
+                <h4 class="action-category__title">${cat.title}</h4>
+                <span class="action-category__subtotal" id="catTotal_${lvl}_${cat.key}">0.00 ADR</span>
+              </div>
+              <button class="btn btn--secondary btn--sm" data-add-action data-level="${lvl}" data-category="${cat.key}">
+                <span>➕</span> Aktion
+              </button>
+            </div>
+            <div class="action-category__rows" id="rows_${lvl}_${cat.key}"></div>
+          `;
+          catList.appendChild(catSec);
+        });
+
+        body.appendChild(catList);
+        card.appendChild(header);
+        card.appendChild(body);
+        container.appendChild(card);
+      }
+
+      attachGlobalEventListeners();
+      renderAllActionRows();
+    }
+
+    function renderAllActionRows() {
+      for (let lvl = 1; lvl <= 20; lvl++) {
+        for (const cat of ['action', 'bonusaction', 'reaction', 'offturn']) {
+          renderActionCategoryRows(lvl, cat);
+        }
+      }
+    }
+
+    function renderActionCategoryRows(lvl, cat) {
+      const container = document.getElementById(`rows_${lvl}_${cat}`);
+      if (!container) return;
+      container.innerHTML = '';
+      const actions = appData[lvl].categories[cat];
+
+      actions.forEach(act => {
+        const row = createActionRowElement(lvl, cat, act);
+        container.appendChild(row);
+      });
+    }
+
+    function createActionRowElement(lvl, cat, act) {
+      const row = document.createElement('div');
+      row.className = 'action-row';
+      row.id = `actionRow_${act.id}`;
+
+      const isSave = act.defense !== DEF_AC;
+
+      row.innerHTML = `
+        <div class="action-row__top">
+          <input type="text" class="action-row__name-input" data-field="name" value="${escapeHtml(act.name)}" placeholder="Aktionsname (z. B. Greatsword)">
+          <span class="action-row__result-badge" id="actResult_${act.id}">0.00 ADR</span>
+          <div class="action-row__actions">
+            <button class="btn btn--secondary btn--sm" data-duplicate title="Aktion duplizieren">📋</button>
+            <button class="btn btn--danger btn--sm" data-delete title="Aktion löschen">🗑️</button>
+          </div>
+        </div>
+        <div class="action-row__grid">
+          <div class="action-field">
+            <label class="action-field__label">Modus</label>
+            <select class="action-field__select" data-field="rollMode">
+              <option value="normal" ${act.rollMode === 'normal' ? 'selected' : ''}>Normal</option>
+              <option value="advantage" ${act.rollMode === 'advantage' ? 'selected' : ''}>Advantage</option>
+              <option value="disadvantage" ${act.rollMode === 'disadvantage' ? 'selected' : ''}>Disadvantage</option>
+            </select>
+          </div>
+          <div class="action-field">
+            <label class="action-field__label">Zielwert</label>
+            <select class="action-field__select" data-field="defense">
+              <option value="${DEF_AC}" ${act.defense === DEF_AC ? 'selected' : ''}>AC (Angriff)</option>
+              <option value="${DEF_STR}" ${act.defense === DEF_STR ? 'selected' : ''}>STR Save</option>
+              <option value="${DEF_DEX}" ${act.defense === DEF_DEX ? 'selected' : ''}>DEX Save</option>
+              <option value="${DEF_CON}" ${act.defense === DEF_CON ? 'selected' : ''}>CON Save</option>
+              <option value="${DEF_INT}" ${act.defense === DEF_INT ? 'selected' : ''}>INT Save</option>
+              <option value="${DEF_WIS}" ${act.defense === DEF_WIS ? 'selected' : ''}>WIS Save</option>
+              <option value="${DEF_CHA}" ${act.defense === DEF_CHA ? 'selected' : ''}>CHA Save</option>
+            </select>
+          </div>
+          <div class="action-field">
+            <label class="action-field__label">${isSave ? 'Save DC' : 'To-Hit Bonus'}</label>
+            <input type="text" class="action-field__input" data-field="hit" value="${escapeHtml(act.hit)}" placeholder="${isSave ? 'prof + int' : 'prof + str'}">
+          </div>
+          <div class="action-field" style="grid-column: span 2;">
+            <label class="action-field__label">Schaden (Damage)</label>
+            <input type="text" class="action-field__input" data-field="damage" value="${escapeHtml(act.damage)}" placeholder="2d6 + str">
+          </div>
+          <div class="action-field">
+            <label class="action-field__label">Crit ab</label>
+            <input type="number" min="1" max="20" class="action-field__input" data-field="critOn" value="${act.critOn}" ${isSave ? 'disabled' : ''}>
+          </div>
+          <div class="action-field">
+            <label class="action-field__label">Crit Bonus</label>
+            <input type="text" class="action-field__input" data-field="critBonus" value="${escapeHtml(act.critBonus)}" placeholder="leer = Auto-Würfel" ${isSave ? 'disabled' : ''}>
+          </div>
+          <div class="action-field">
+            <label class="action-field__label">Miss (Graze)</label>
+            <input type="text" class="action-field__input" data-field="missDamage" value="${escapeHtml(act.missDamage)}" placeholder="str" ${isSave ? 'disabled' : ''}>
+          </div>
+          <div class="action-field">
+            <label class="action-field__label">Save Schaden</label>
+            <select class="action-field__select" data-field="saveMode" ${!isSave ? 'disabled' : ''}>
+              <option value="half" ${act.saveMode === 'half' ? 'selected' : ''}>0.5x (Halb)</option>
+              <option value="none" ${act.saveMode === 'none' ? 'selected' : ''}>0.0x (Kein)</option>
+            </select>
+          </div>
+          <div class="action-field">
+            <label class="action-field__label">Multiplier</label>
+            <input type="number" step="0.1" min="0" class="action-field__input" data-field="multiplier" value="${act.multiplier}">
+          </div>
+        </div>
+      `;
+
+      // Event listener for input updates
+      row.querySelectorAll('[data-field]').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const field = e.target.dataset.field;
+          let val = e.target.value;
+          if (field === 'critOn') val = parseInt(val, 10) || 20;
+          if (field === 'multiplier') val = parseFloat(val) || 1;
+
+          act[field] = val;
+
+          // If defense changed between AC and Save, update disabled states
+          if (field === 'defense') {
+            renderActionCategoryRows(lvl, cat);
+          } else {
+            updateSingleAction(lvl, act);
+          }
+          saveData();
+        });
+      });
+
+      // Duplicate action
+      row.querySelector('[data-duplicate]').addEventListener('click', () => {
+        const copy = JSON.parse(JSON.stringify(act));
+        copy.id = 'act_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+        copy.name += ' (Kopie)';
+        appData[lvl].categories[cat].push(copy);
+        renderActionCategoryRows(lvl, cat);
+        updateAllCalculations();
+        saveData();
+      });
+
+      // Delete action
+      row.querySelector('[data-delete]').addEventListener('click', () => {
+        appData[lvl].categories[cat] = appData[lvl].categories[cat].filter(a => a.id !== act.id);
+        renderActionCategoryRows(lvl, cat);
+        updateAllCalculations();
+        saveData();
+      });
+
+      return row;
+    }
+
+    function attachGlobalEventListeners() {
+      // Attribute Input Changes
+      document.querySelectorAll('.stat-item__input').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const lvl = parseInt(e.target.dataset.level, 10);
+          const stat = e.target.dataset.stat;
+          const val = parseInt(e.target.value, 10) || 10;
+          appData[lvl].stats[stat] = val;
+
+          // Update modifier badge
+          const modEl = document.getElementById(`mod_${lvl}_${stat}`);
+          const mod = getModifier(val);
+          modEl.textContent = (mod >= 0 ? '+' : '') + mod;
+
+          updateLevelCalculations(lvl);
+          saveData();
+        });
+      });
+
+      // Target Profile Radio Changes
+      document.querySelectorAll('[name^="targetProfile_"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          const lvl = parseInt(e.target.name.split('_')[1], 10);
+          const profile = parseInt(e.target.value, 10);
+          appData[lvl].targetProfile = profile;
+
+          if (profile === TARGET_MM) {
+            appData[lvl].target = getTargetPreset(TARGET_MM, lvl);
+          } else if (profile === TARGET_TREANTMONK) {
+            appData[lvl].target = getTargetPreset(TARGET_TREANTMONK, lvl);
+          }
+
+          // Update target inputs in DOM
+          const targetGrid = document.getElementById(`targetGrid_${lvl}`);
+          const isCustom = (profile === TARGET_CUSTOM);
+          targetGrid.querySelectorAll('input').forEach(inp => {
+            const field = inp.dataset.targetField;
+            inp.value = appData[lvl].target[field];
+            inp.disabled = !isCustom;
+          });
+
+          updateLevelCalculations(lvl);
+          saveData();
+        });
+      });
+
+      // Target Input Changes (Custom profile)
+      document.querySelectorAll('.target-item__input').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const lvl = parseInt(e.target.dataset.level, 10);
+          const field = e.target.dataset.targetField;
+          appData[lvl].target[field] = parseFloat(e.target.value) || 0;
+          updateLevelCalculations(lvl);
+          saveData();
+        });
+      });
+
+      // Add Action Buttons
+      document.querySelectorAll('[data-add-action]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const lvl = parseInt(btn.dataset.level, 10);
+          const cat = btn.dataset.category;
+          const newAct = createAction({
+            name: cat === 'action' ? 'Angriff' : 'Bonus-Aktion'
+          });
+          appData[lvl].categories[cat].push(newAct);
+          renderActionCategoryRows(lvl, cat);
+          updateAllCalculations();
+          saveData();
+        });
+      });
+    }
+
+    /* Clone all attributes, target and actions from level - 1 */
+    function clonePreviousLevel(targetLvl) {
+      if (targetLvl <= 1) return;
+      const prev = appData[targetLvl - 1];
+      const target = appData[targetLvl];
+
+      target.stats = JSON.parse(JSON.stringify(prev.stats));
+      target.targetProfile = prev.targetProfile;
+      target.target = JSON.parse(JSON.stringify(prev.target));
+      target.categories = JSON.parse(JSON.stringify(prev.categories));
+
+      // Re-render and update
+      renderApp();
+      saveData();
+      showToast(`Level ${targetLvl - 1} erfolgreich auf Level ${targetLvl} übertragen!`);
+    }
+
+    /* ==========================================================================
+       5. CALCULATION UPDATERS
+       ========================================================================== */
+    function updateSingleAction(lvl, act) {
+      const result = calculateActionADR(act, appData[lvl].stats, appData[lvl].target, lvl);
+      const badge = document.getElementById(`actResult_${act.id}`);
+      if (badge) {
+        badge.textContent = `${result.adr.toFixed(2)} ADR`;
+        if (result.hasError) {
+          badge.style.borderColor = 'var(--color-danger)';
+        } else {
+          badge.style.borderColor = 'rgba(225, 29, 72, 0.4)';
+        }
+      }
+      updateLevelTotals(lvl);
+    }
+
+    function updateLevelTotals(lvl) {
+      let lvlSum = 0;
+      for (const cat of ['action', 'bonusaction', 'reaction', 'offturn']) {
+        let catSum = 0;
+        for (const act of appData[lvl].categories[cat]) {
+          const res = calculateActionADR(act, appData[lvl].stats, appData[lvl].target, lvl);
+          catSum += res.adr;
+        }
+        const catBadge = document.getElementById(`catTotal_${lvl}_${cat}`);
+        if (catBadge) {
+          catBadge.textContent = `${catSum.toFixed(2)} ADR`;
+        }
+        lvlSum += catSum;
+      }
+
+      const lvlBadge = document.getElementById(`levelTotalBadge_${lvl}`);
+      if (lvlBadge) {
+        lvlBadge.textContent = `[ ${lvlSum.toFixed(2)} ADR ]`;
+      }
+
+      updateGlobalTierStats();
+      updateChartData();
+    }
+
+    function updateLevelCalculations(lvl) {
+      for (const cat of ['action', 'bonusaction', 'reaction', 'offturn']) {
+        for (const act of appData[lvl].categories[cat]) {
+          const res = calculateActionADR(act, appData[lvl].stats, appData[lvl].target, lvl);
+          const badge = document.getElementById(`actResult_${act.id}`);
+          if (badge) badge.textContent = `${res.adr.toFixed(2)} ADR`;
+        }
+      }
+      updateLevelTotals(lvl);
+    }
+
+    function updateAllCalculations() {
+      for (let lvl = 1; lvl <= 20; lvl++) {
+        updateLevelCalculations(lvl);
+      }
+    }
+
+    function updateGlobalTierStats() {
+      const getAvg = (start, end) => {
+        let sum = 0;
+        for (let i = start; i <= end; i++) {
+          sum += calculateLevelADR(i);
+        }
+        return (sum / (end - start + 1)).toFixed(2);
+      };
+
+      document.getElementById('tier1Avg').textContent = `${getAvg(1, 4)} ADR`;
+      document.getElementById('tier2Avg').textContent = `${getAvg(5, 10)} ADR`;
+      document.getElementById('tier3Avg').textContent = `${getAvg(11, 16)} ADR`;
+      document.getElementById('tier4Avg').textContent = `${getAvg(17, 20)} ADR`;
+    }
+
+    /* ==========================================================================
+       6. PROGRESSION CHART (CHART.JS)
+       ========================================================================== */
+    function initProgressionChart() {
+      if (typeof Chart === 'undefined') {
+        console.warn('Chart.js CDN noch nicht bereit oder offline.');
+        return;
+      }
+      const canvas = document.getElementById('progressionChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const labels = Array.from({ length: 20 }, (_, i) => `Lvl ${i + 1}`);
+      const charData = Array.from({ length: 20 }, (_, i) => calculateLevelADR(i + 1));
+      const baselineData = TREANTMONK_DPR_BASELINE.slice(1);
+
+      if (progressionChart) {
+        progressionChart.destroy();
+      }
+
+      progressionChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Dein Charakter',
+              data: charData,
+              borderColor: '#e11d48',
+              backgroundColor: 'rgba(225, 29, 72, 0.1)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.25,
+              pointBackgroundColor: '#e11d48',
+              pointRadius: 3
+            },
+            {
+              label: 'Treantmonk Baseline',
+              data: baselineData,
+              borderColor: '#f59e0b',
+              borderDash: [5, 5],
+              borderWidth: 2,
+              fill: false,
+              tension: 0.2,
+              pointBackgroundColor: '#f59e0b',
+              pointRadius: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#151c2e',
+              titleColor: '#f8fafc',
+              bodyColor: '#cbd5e1',
+              borderColor: '#2d3748',
+              borderWidth: 1,
+              padding: 10,
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} ADR`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8' }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: {
+                color: '#94a3b8',
+                callback: function(value) { return value + ' ADR'; }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateChartData() {
+      if (!progressionChart) return;
+      const charData = Array.from({ length: 20 }, (_, i) => calculateLevelADR(i + 1));
+      progressionChart.data.datasets[0].data = charData;
+      progressionChart.update('none');
+    }
+
+    /* ==========================================================================
+       7. IMPORT / EXPORT / RESET MODAL & TOAST
+       ========================================================================== */
+    const modal = document.getElementById('dataModal');
+    const modalTextarea = document.getElementById('modalTextarea');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDesc = document.getElementById('modalDesc');
+    const modalBtnAction = document.getElementById('modalBtnAction');
+    const modalBtnDownload = document.getElementById('modalBtnDownload');
+    let modalMode = 'export';
+
+    function openExportModal() {
+      modalMode = 'export';
+      modalTitle.textContent = 'JSON Export';
+      modalDesc.textContent = 'Die Konfiguration wurde in die Zwischenablage kopiert oder kann hier manuell kopiert werden.';
+      const jsonStr = JSON.stringify(appData, null, 2);
+      modalTextarea.value = jsonStr;
+      modalBtnAction.textContent = 'In Zwischenablage kopieren';
+      modalBtnDownload.style.display = 'inline-flex';
+      modal.classList.add('modal--open');
+
+      navigator.clipboard.writeText(jsonStr).then(() => {
+        showToast('Erfolgreich in die Zwischenablage kopiert!');
+      }).catch(() => {});
+    }
+
+    function openImportModal() {
+      modalMode = 'import';
+      modalTitle.textContent = 'JSON Import';
+      modalDesc.textContent = 'Füge hier deine gespeicherten JSON-Daten ein und klicke auf "Importieren".';
+      modalTextarea.value = '';
+      modalBtnAction.textContent = 'Importieren';
+      modalBtnDownload.style.display = 'none';
+      modal.classList.add('modal--open');
+    }
+
+    function closeModal() {
+      modal.classList.remove('modal--open');
+    }
+
+    modalBtnAction.addEventListener('click', () => {
+      if (modalMode === 'export') {
+        navigator.clipboard.writeText(modalTextarea.value).then(() => {
+          showToast('In die Zwischenablage kopiert!');
+          closeModal();
+        });
+      } else {
+        try {
+          const parsed = JSON.parse(modalTextarea.value);
+          if (Array.isArray(parsed) && parsed.length === 21) {
+            appData = parsed;
+            saveData();
+            renderApp();
+            closeModal();
+            showToast('Charakterdaten erfolgreich importiert!');
+          } else {
+            alert('Ungültiges Datenformat: Das JSON muss ein 20-Level-Array enthalten.');
+          }
+        } catch (e) {
+          alert('Fehlerhaftes JSON: Bitte überprüfe die Syntax.');
+        }
+      }
+    });
+
+    modalBtnDownload.addEventListener('click', () => {
+      const blob = new Blob([modalTextarea.value], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dnd_55e_adr_character_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('modalBtnClose').addEventListener('click', closeModal);
+    document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+
+    document.getElementById('btnExport').addEventListener('click', openExportModal);
+    document.getElementById('btnImport').addEventListener('click', openImportModal);
+
+    // Reset All
+    document.getElementById('btnReset').addEventListener('click', () => {
+      if (confirm('Möchtest du wirklich alle Eingaben zurücksetzen? Nicht exportierte Daten gehen verloren.')) {
+        localStorage.removeItem(STORAGE_KEY);
+        initializeData();
+        renderApp();
+        showToast('Alle Werte auf Standard zurückgesetzt.');
+      }
+    });
+
+    // Chart Panel toggle
+    const chartPanel = document.getElementById('chartPanel');
+    const toggleChart = () => chartPanel.classList.toggle('chart-panel--collapsed');
+    document.getElementById('btnToggleChart').addEventListener('click', toggleChart);
+    document.getElementById('chartToggleHeader').addEventListener('click', toggleChart);
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('toast--visible');
+      setTimeout(() => toast.classList.remove('toast--visible'), 3200);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    /* Initialize Application on DOM ready */
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeData();
+      renderApp();
+    });
+  </script>
+</body>
+</html>
